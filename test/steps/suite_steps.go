@@ -10,7 +10,6 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/cucumber/messages-go/v10"
 	"github.com/git-town/git-town/test"
-	"github.com/git-town/git-town/test/helpers"
 )
 
 // beforeSuiteMux ensures that we run BeforeSuite only once globally.
@@ -19,15 +18,16 @@ var beforeSuiteMux sync.Mutex
 // the global GitManager instance
 var gitManager *test.GitManager
 
-var running helpers.OrderedStringSet
+var running []string
 var runningMux sync.Mutex
 
 // SuiteSteps defines global lifecycle step implementations for Cucumber.
 func SuiteSteps(suite *godog.Suite, state *ScenarioState) {
 	suite.BeforeScenario(func(scenario *messages.Pickle) {
 		runningMux.Lock()
-		running = running.Add(scenario.Name)
-		fmt.Printf("\nStarting scenario %q, all scenarios: %s", scenario.Name, running.String())
+		name := scenario.Uri + ":" + scenario.Name
+		running = append(running, name)
+		fmt.Printf("\nStarting %q, %d scenarios:\n%s\n", name, len(running), scenarios(running))
 		runningMux.Unlock()
 		// create a GitEnvironment for the scenario
 		gitEnvironment, err := gitManager.CreateScenarioEnvironment(scenario.GetName())
@@ -50,8 +50,6 @@ func SuiteSteps(suite *godog.Suite, state *ScenarioState) {
 		beforeSuiteMux.Lock()
 		defer beforeSuiteMux.Unlock()
 
-		running = helpers.NewOrderedStringSet()
-
 		if gitManager == nil {
 			baseDir, err := ioutil.TempDir("", "")
 			if err != nil {
@@ -72,8 +70,9 @@ func SuiteSteps(suite *godog.Suite, state *ScenarioState) {
 
 	suite.AfterScenario(func(scenario *messages.Pickle, e error) {
 		runningMux.Lock()
-		running = running.Remove(scenario.Name)
-		fmt.Printf("\nFinished scenario %q, all scenarios: %s", scenario.Name, running.String())
+		name := scenario.Uri + ":" + scenario.Name
+		running = removeFromSlice(running, name)
+		fmt.Printf("\nFinished %q, %d scenarios:\n%s\n", name, len(running), scenarios(running))
 		runningMux.Unlock()
 		if e == nil {
 			err := state.gitEnv.Remove()
@@ -84,6 +83,25 @@ func SuiteSteps(suite *godog.Suite, state *ScenarioState) {
 			fmt.Printf("failed scenario, investigate state in %q\n", state.gitEnv.Dir)
 		}
 	})
+}
+
+func removeFromSlice(slice []string, element string) (result []string) {
+	removed := false
+	for s := range slice {
+		if slice[s] != element || removed {
+			result = append(result, slice[s])
+		} else {
+			removed = true
+		}
+	}
+	return result
+}
+
+func scenarios(list []string) (result string) {
+	for l := range list {
+		result += fmt.Sprintf("%d. %s\n", l, list[l])
+	}
+	return result
 }
 
 // hasTag indicates whether the given feature has a tag with the given name.
