@@ -34,6 +34,19 @@ func (set OrderedStringSet) Contains(text string) bool {
 	return false
 }
 
+// Remove deletes the given element from this set.
+func (set OrderedStringSet) Remove(element string) OrderedStringSet {
+	newElements := make([]string, len(set.elements)-1)
+	i := 0
+	for e := range set.elements {
+		if set.elements[e] != element {
+			newElements[i] = set.elements[e]
+			i++
+		}
+	}
+	return NewOrderedStringSet(newElements...)
+}
+
 // Slice provides the elements of this set in the order they were received.
 func (set OrderedStringSet) Slice() []string {
 	return set.elements

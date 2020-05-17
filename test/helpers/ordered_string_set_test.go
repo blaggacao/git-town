@@ -7,10 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOrderedStringSet(t *testing.T) {
+func TestOrderedStringSet_addMultiple(t *testing.T) {
 	set1 := helpers.NewOrderedStringSet("one")
 	set2 := set1.Add("two")
 	set2 = set2.Add("two")
 	assert.Equal(t, []string{"one", "two"}, set2.Slice())
 	assert.Equal(t, "one, two", set2.String())
+}
+
+func TestOrderedStringSet_remove(t *testing.T) {
+	set1 := helpers.NewOrderedStringSet("one", "two", "three")
+	set2 := set1.Remove("two")
+	assert.Equal(t, []string{"one", "three"}, set2.Slice())
 }
