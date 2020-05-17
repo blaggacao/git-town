@@ -21,6 +21,7 @@ var gitManager *test.GitManager
 // SuiteSteps defines global lifecycle step implementations for Cucumber.
 func SuiteSteps(suite *godog.Suite, state *ScenarioState) {
 	suite.BeforeScenario(func(scenario *messages.Pickle) {
+		fmt.Println("\nRunning scenario: ", scenario.GetName())
 		// create a GitEnvironment for the scenario
 		gitEnvironment, err := gitManager.CreateScenarioEnvironment(scenario.GetName())
 		if err != nil {
@@ -60,6 +61,7 @@ func SuiteSteps(suite *godog.Suite, state *ScenarioState) {
 	})
 
 	suite.AfterScenario(func(scenario *messages.Pickle, e error) {
+		fmt.Println("\nScenario done: ", scenario.GetName())
 		if e == nil {
 			err := state.gitEnv.Remove()
 			if err != nil {
