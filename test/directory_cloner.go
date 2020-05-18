@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // fileData describes a memoized file
@@ -28,9 +30,6 @@ func NewDirectoryCloner(src string) (result *DirectoryCloner, err error) {
 		if err != nil {
 			return fmt.Errorf("cannot make path %q relative to %q", absPath, src)
 		}
-		if relPath == "." {
-			return nil
-		}
 		if fi.IsDir() {
 			result.dirs = append(result.dirs, fileData{relPath: relPath, perms: fi.Mode()})
 			return nil
@@ -50,23 +49,22 @@ func NewDirectoryCloner(src string) (result *DirectoryCloner, err error) {
 
 // CreateCopy creates a copy of the memoized files in the given directory.
 func (dc *DirectoryCloner) CreateCopy(target string) error {
-	err := os.Mkdir(target, 0744)
-	if err != nil {
-		return fmt.Errorf("cannot create directory %q", err)
-	}
 	for d := range dc.dirs {
-		fullPath := filepath.Join(target, dc.dirs[d].relPath)
-		err := os.Mkdir(fullPath, dc.dirs[d].perms)
+		dirPath := filepath.Join(target, dc.dirs[d].relPath)
+		err := os.Mkdir(dirPath, dc.dirs[d].perms)
 		if err != nil {
-			return fmt.Errorf("cannot create directory %q: %w", fullPath, err)
+			return fmt.Errorf("cannot create directory %q: %w", dirPath, err)
 		}
 	}
+	var fileGroup errgroup.Group
 	for f := range dc.files {
-		absPath := filepath.Join(target, dc.files[f].relPath)
-		err := ioutil.WriteFile(absPath, dc.files[f].content, dc.files[f].perms)
-		if err != nil {
-			return fmt.Errorf("cannot create file %q: %w", absPath, err)
-		}
+		f := f // https://golang.org/doc/faq#closures_and_goroutines
+		fileGroup.Go(func() error {
+			return ioutil.WriteFile(filepath.Join(target, dc.files[f].relPath), dc.files[f].content, dc.files[f].perms)
+		})
+	}
+	if err := fileGroup.Wait(); err != nil {
+		return fmt.Errorf("cannot create file: %w", err)
 	}
 	return nil
 }
