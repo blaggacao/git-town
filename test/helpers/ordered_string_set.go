@@ -17,11 +17,14 @@ func NewOrderedStringSet(elements ...string) OrderedStringSet {
 
 // Add provides a new Set with the given element added.
 // If the element already exists, it re-uses the existing element and does not append a new one.
-func (set OrderedStringSet) Add(text string) OrderedStringSet {
-	if !set.Contains(text) {
-		return OrderedStringSet{elements: append(set.elements, text)}
+func (set OrderedStringSet) Add(elements ...string) OrderedStringSet {
+	result := set
+	for e := range elements {
+		if !set.Contains(elements[e]) {
+			result = OrderedStringSet{elements: append(result.elements, elements[e])}
+		}
 	}
-	return set
+	return result
 }
 
 // Contains indicates whether this Set contains the given string.

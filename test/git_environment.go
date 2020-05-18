@@ -35,10 +35,10 @@ type GitEnvironment struct {
 
 // CloneGitEnvironment provides a GitEnvironment instance in the given directory,
 // containing a copy of the given GitEnvironment.
-func CloneGitEnvironment(original *GitEnvironment, dir string) (*GitEnvironment, error) {
-	err := CopyDirectory(original.Dir, dir)
+func CloneGitEnvironment(dir string, cloner *DirectoryCloner) (*GitEnvironment, error) {
+	err := cloner.CreateCopy(dir)
 	if err != nil {
-		return nil, fmt.Errorf("cannot clone GitEnvironment %q to folder %q: %w", original.Dir, dir, err)
+		return nil, fmt.Errorf("cannot clone GitEnvironment to folder %q: %w", dir, err)
 	}
 	binDir := filepath.Join(dir, "bin")
 	originDir := filepath.Join(dir, "origin")

@@ -18,6 +18,8 @@ type GitManager struct {
 
 	// the memoized environment
 	memoized *GitEnvironment
+
+	cloner *DirectoryCloner
 }
 
 // NewGitManager provides a new GitManager instance operating in the given directory.
@@ -33,6 +35,10 @@ func (manager *GitManager) CreateMemoizedEnvironment() error {
 	if err != nil {
 		return fmt.Errorf("cannot create memoized environment: %w", err)
 	}
+	manager.cloner, err = NewDirectoryCloner(manager.memoized.Dir)
+	if err != nil {
+		return fmt.Errorf("cannot create cloner for memoized environment: %w", err)
+	}
 	return nil
 }
 
@@ -40,5 +46,5 @@ func (manager *GitManager) CreateMemoizedEnvironment() error {
 func (manager *GitManager) CreateScenarioEnvironment(scenarioName string) (*GitEnvironment, error) {
 	envDirName := helpers.FolderName(scenarioName) + "_" + helpers.UniqueString()
 	envPath := filepath.Join(manager.dir, envDirName)
-	return CloneGitEnvironment(manager.memoized, envPath)
+	return CloneGitEnvironment(envPath, manager.cloner)
 }

@@ -8,9 +8,10 @@ import (
 )
 
 func TestOrderedStringSet(t *testing.T) {
-	set1 := helpers.NewOrderedStringSet("one")
-	set2 := set1.Add("two")
-	set2 = set2.Add("two")
-	assert.Equal(t, []string{"one", "two"}, set2.Slice())
-	assert.Equal(t, "one, two", set2.String())
+	set := helpers.NewOrderedStringSet("one")
+	set = set.Add("two")
+	set = set.Add("two")
+	set = set.Add("two", "three")
+	assert.Equal(t, []string{"one", "two", "three"}, set.Slice())
+	assert.Equal(t, "one, two, three", set.String())
 }
