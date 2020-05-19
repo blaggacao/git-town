@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"golang.org/x/sync/errgroup"
 )
 
 // fileData describes a memoized file
@@ -56,15 +54,12 @@ func (dc *DirectoryCloner) CreateCopy(target string) error {
 			return fmt.Errorf("cannot create directory %q: %w", dirPath, err)
 		}
 	}
-	var fileGroup errgroup.Group
 	for f := range dc.files {
-		f := f // https://golang.org/doc/faq#closures_and_goroutines
-		fileGroup.Go(func() error {
-			return ioutil.WriteFile(filepath.Join(target, dc.files[f].relPath), dc.files[f].content, dc.files[f].perms)
-		})
-	}
-	if err := fileGroup.Wait(); err != nil {
-		return fmt.Errorf("cannot create file: %w", err)
+		absPath := filepath.Join(target, dc.files[f].relPath)
+		err := ioutil.WriteFile(absPath, dc.files[f].content, dc.files[f].perms)
+		if err != nil {
+			return fmt.Errorf("cannot create file %q: %w", absPath, err)
+		}
 	}
 	return nil
 }
